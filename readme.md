@@ -22,3 +22,7 @@ or
 ## IMPORTANT
 If you want the api in the server to work properbly, please create a .env file containg the element MONGODB_URI and pass in the mongodb url running on your localhost.
 
+You will also need the pm2 package:
+```bash
+npm i -g pm2
+```
