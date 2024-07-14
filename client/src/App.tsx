@@ -1,37 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import appLogo from '/favicon.svg'
-import PWABadge from './PWABadge.tsx'
-import './App.css'
+import React, { useEffect, useState } from 'react';
+import { openIndexedDB, storeDataInIndexedDB, getDataFromIndexedDB } from './utils/indexdb';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={appLogo} className="logo" alt="tkdathletics logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>tkdathletics</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-      <PWABadge />
-    </>
-  )
+interface DataType {
+  _id: string;
+  name: string;
+  email: string;
 }
 
-export default App
+const App: React.FC = () => {
+  const [data, setData] = useState<DataType[]>([])
+
+  useEffect(() => {
+    const fetchDataAndStoreInIndexedDB = async () => {
+      try {
+        let db = await openIndexedDB();
+
+        if (navigator.onLine) {
+          const response = await fetch('http://localhost:3890/users/123456/getall');
+          const data = await response.json();
+          await storeDataInIndexedDB(db, data);
+          setData(data);
+          console.log('Data successfully stored in IndexedDB');
+        } else {
+          const data = await getDataFromIndexedDB(db);
+          setData(data);
+          console.log('Data loaded from IndexedDB');
+        }
+      } catch (error) {
+        console.error('Error fetching and storing data: ', error);
+      }
+    };
+
+    fetchDataAndStoreInIndexedDB();
+  }, []);
+
+  return (
+    <div>
+      <h1>FETCHED DATABASE:</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+};
+
+export default App;

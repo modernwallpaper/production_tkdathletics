@@ -27,7 +27,7 @@ app.post("/users/:pwd/create/", async (req, res) => {
   const password = req.params.pwd;
   const user = req.body;
 
-  if (!user || !user.name || !user.email) {
+  if (!user || !user.name || !user.email || !user.timestamp) {
     return res.status(400).send({ error: "No user provided or incomplete data" });
   }
   if (!password) {
@@ -40,6 +40,7 @@ app.post("/users/:pwd/create/", async (req, res) => {
   const newUser = new User({
     name: user.name,
     email: user.email,
+    timestamp: user.timestamp,
   });
 
   try {
