@@ -5,11 +5,12 @@ navigate to
 ```bash
 ./$ROOT_DIR
 ```
-and run ```bash 
+and run 
+```bash 
 ./run.sh --all
 ```
-
-If you only want to run the client or the server pass in the flags ```bash 
+If you only want to run the client or the server pass in the flags 
+```bash 
 --client
 ``` 
 or 
