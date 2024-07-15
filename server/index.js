@@ -50,6 +50,47 @@ app.post("/users/:pwd/create/", async (req, res) => {
   }
 });
 
+app.post("/users/:pwd/update/:id/", async (req, res) => {
+  const password = req.params.pwd;
+  const id = req.params.id;
+  const user = req.body;
+
+  if (!user || !user.name || !user.email || !id) {
+    return res.status(400).send({ error: "No user provided or incomplete data" });
+  }
+  if (!password) {
+    return res.status(400).send({ error: "No password provided :(" });
+  }
+  if (password !== "123456") {
+    return res.status(401).send({ error: "Wrong password :(" });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).send({ error: "Invalid user ID" });
+  }
+
+  const updateData = {
+    name: user.name,
+    email: user.email,
+  };
+
+  try {
+    const updateUser = await User.findByIdAndUpdate(
+      id,
+      updateData,  
+      { new: true, runValidators: true },
+    ); 
+
+    if (!updateUser) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    return res.status(200).send(updateUser);
+  } catch (error) {
+    return res.status(500).send({ error: "Error updating user", details: error });
+  }
+});
+
 app.get("/users/:pwd/getall/", async (req, res) => {
   const password = req.params.pwd; // You missed this line
 

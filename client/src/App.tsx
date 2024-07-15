@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { openIndexedDB, storeDataInIndexedDB, getDataFromIndexedDB } from './utils/indexdb';
+import {
+  openIndexedDB,
+  storeDataInIndexedDB,
+  getDataFromIndexedDB,
+  storeOfflineChange,
+  getOfflineChanges,
+  clearOfflineChanges,
+  syncChangeWithServer,
+  fetchDataFromServer,
+  updateOfflineChange,
+} from './utils/indexdb';
 import PWABadge from './PWABadge';
 
 interface DataType {
@@ -9,36 +19,88 @@ interface DataType {
 }
 
 const App: React.FC = () => {
-  const [data, setData] = useState<DataType[]>([])
+  const [data, setData] = useState<DataType[]>([]);
 
   useEffect(() => {
     const fetchDataAndStoreInIndexedDB = async () => {
-      try {
-        let db = await openIndexedDB();
+      let db = await openIndexedDB();
 
-        if (navigator.onLine) {
-          const response = await fetch('http://localhost:3890/users/123456/getall');
-          const data = await response.json();
-          await storeDataInIndexedDB(db, data);
-          setData(data);
-          console.log('Data successfully stored in IndexedDB');
-        } else {
-          const data = await getDataFromIndexedDB(db);
-          setData(data);
-          console.log('Data loaded from IndexedDB');
-        }
-      } catch (error) {
-        console.error('Error fetching and storing data: ', error);
+      if (navigator.onLine) {
+        // Fetch data from the server
+        const data = await fetchDataFromServer();
+        // Get any offline changes
+        const offlineChanges = await getOfflineChanges(db);
+
+        // Merge offline changes into the fetched data
+        const mergedData = data.map(user => {
+          const offlineChange = offlineChanges.find(change => change._id === user._id);
+          return offlineChange ? { ...user, ...offlineChange } : user;
+        });
+
+        // Store merged data in IndexedDB
+        await storeDataInIndexedDB(db, mergedData);
+        setData(mergedData);
+        console.log('Data successfully stored in IndexedDB');
+
+        // Clear offline changes
+        await clearOfflineChanges(db);
+      } else {
+        // Load data from IndexedDB
+        const data = await getDataFromIndexedDB(db);
+        setData(data);
+        console.log('Data loaded from IndexedDB');
       }
     };
 
     fetchDataAndStoreInIndexedDB();
   }, []);
 
+  const handleChange = async (newData: DataType) => {
+    let db = await openIndexedDB();
+    if (navigator.onLine) {
+      await syncChangeWithServer(newData, newData._id);
+      const updatedData = await fetchDataFromServer();
+      await storeDataInIndexedDB(db, updatedData);
+      setData(updatedData);
+    } else {
+      const offlineChanges = await getOfflineChanges(db);
+      const existingChange = offlineChanges.find(change => change._id === newData._id);
+
+      if (existingChange) {
+        // Update the existing change
+        await updateOfflineChange(db, newData);
+      } else {
+        // Add new change
+        await storeOfflineChange(db, newData);
+      }
+
+      // Optionally, update the local state to reflect changes immediately
+      const updatedData = data.map(user => user._id === newData._id ? newData : user);
+      setData(updatedData);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const id = (form.elements.namedItem('id') as HTMLInputElement).value;
+    const name = (form.elements.namedItem('name') as HTMLInputElement).value;
+    const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+
+    const newData: DataType = { _id: id, name, email };
+    await handleChange(newData);
+  };
+
   return (
     <div>
-      <h1>FETCHED DATABASE:</h1>
+      <h1>FETCHED DATABASE USERS:</h1>
       <pre>{JSON.stringify(data, null, 2)}</pre>
+      <form onSubmit={handleSubmit}>
+        <input name='id' placeholder='id' />
+        <input name='name' placeholder='name' />
+        <input name='email' placeholder='email' />
+        <button type='submit'>Update</button>
+      </form>
       <PWABadge />
     </div>
   );

@@ -6,6 +6,9 @@ start_server() {
 }
 
 start_client() {
+  cd client 
+  npm run build
+  cd ..
   pm2 start http-server --name "client" -- client/dist -p 8000
 }
 
