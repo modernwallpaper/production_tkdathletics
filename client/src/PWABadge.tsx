@@ -3,8 +3,8 @@ import './PWABadge.css'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 function PWABadge() {
-  // check for updates every hour
-  const period = 60 * 60 * 1000
+  // check for updates every minute 
+  const period = 60 * 1000
 
   const {
     

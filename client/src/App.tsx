@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { openIndexedDB, storeDataInIndexedDB, getDataFromIndexedDB } from './utils/indexdb';
+import PWABadge from './PWABadge';
 
 interface DataType {
   _id: string;
@@ -38,6 +39,7 @@ const App: React.FC = () => {
     <div>
       <h1>FETCHED DATABASE:</h1>
       <pre>{JSON.stringify(data, null, 2)}</pre>
+      <PWABadge />
     </div>
   );
 };
